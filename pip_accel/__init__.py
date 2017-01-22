@@ -71,8 +71,15 @@ from pip_accel.utils import (
 from humanfriendly import concatenate, Timer, pluralize
 from pip import index as pip_index_module
 from pip import wheel as pip_wheel_module
-from pip.commands import install as pip_install_module
+from pip import __version__ as pip_version
+
 from pip.commands.install import InstallCommand
+
+if pip_version < '8':
+    from pip.commands import install as pip_command_module
+else:
+    from pip import basecommand as pip_command_module
+
 from pip.exceptions import DistributionNotFound
 from pip.req import InstallRequirement
 
@@ -389,7 +396,7 @@ class PipAccelerator(object):
         """
         unpack_timer = Timer()
         logger.info("Unpacking distribution(s) ..")
-        with PatchedAttribute(pip_install_module, 'PackageFinder', CustomPackageFinder):
+        with PatchedAttribute(pip_command_module, 'PackageFinder', CustomPackageFinder):
             requirements = self.get_pip_requirement_set(arguments, use_remote_index=False, use_wheels=use_wheels)
             logger.info("Finished unpacking %s in %s.", pluralize(len(requirements), "distribution"), unpack_timer)
             return requirements
@@ -441,6 +448,7 @@ class PipAccelerator(object):
         #     are already installed we will have work around this later, but
         #     that seems fairly simple to do).
         command_line.append('--download=%s' % self.config.source_index)
+
         # Use `--find-links' to point pip at pip-accel's local source
         # distribution index directory. This ensures that source distribution
         # archives are never downloaded more than once (regardless of the HTTP
@@ -489,7 +497,7 @@ class PipAccelerator(object):
         # Initialize and run the `pip install' command.
         command = InstallCommand()
         opts, args = command.parse_args(command_line)
-        if not opts.ignore_installed:
+        if not opts.ignore_installed and pip_version < '8':
             # If the user didn't supply the -I, --ignore-installed option we
             # will forcefully disable the option. Refer to the documentation of
             # the AttributeOverrides class for further details.
