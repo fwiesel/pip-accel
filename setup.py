@@ -68,9 +68,11 @@ setup(name='pip-accel',
               'local = pip_accel.caches.local',
               # An optional cache backend that uses Amazon S3.
               's3 = pip_accel.caches.s3 [s3]',
+              'swift = pip_accel.caches.swift [swift]'
           ],
       },
-      extras_require={'s3': 'boto >= 2.32'},
+      extras_require={'s3': 'boto >= 2.32',
+                      'swift': ['python-swiftclient >= 3.0', 'python-keystoneclient']},
       package_data={'pip_accel.deps': ['*.ini']},
       install_requires=get_requirements('requirements.txt'),
       test_suite='pip_accel.tests',
